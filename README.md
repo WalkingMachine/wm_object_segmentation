@@ -1,6 +1,7 @@
 # On SARA
 
 `$ roslaunch sara_launch wm_openni2.launch camera:=head_xtion`
+
 `$ roslaunch wm_object_segmentation wm_object_segmentation.launch`
 
 WM repo needed: wm_openni2_camera and wm_table_segmentation
