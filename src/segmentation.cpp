@@ -39,6 +39,25 @@ void callback(wm_object_segmentation::wm_object_segmentationConfig &config, uint
 
 void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 {
+
+   if(ros::param::has("/process_object_segmentation"))
+   {
+       ROS_INFO("process_object_segmentation EXIST");
+       bool rosParamProcess;
+       //ros::param::get("/process_object_segmentation", rosParamProcess);
+
+       ros::param::get("/process_object_segmentation", rosParamProcess)
+
+       ROS_INFO_STREAM("process_object_segmentation : " << rosParamProcess);
+       if(!rosParamProcess)
+       {
+           ROS_INFO("process_object_segmentation IS FALSE");
+           return;
+       }
+       else
+           ROS_INFO("process_object_segmentation IS TRUE");
+   }
+
   // Container for original & filtered data
   pcl::PCLPointCloud2* cloud = new pcl::PCLPointCloud2; 
   pcl::PCLPointCloud2ConstPtr cloudPtr(cloud);
@@ -468,6 +487,7 @@ main (int argc, char** argv)
 {
   // Initialize ROS
   ros::init (argc, argv, "wm_object_segmentation");
+
   ros::NodeHandle nh;
 
    nh.param("publish_markers", _PUBLISH_MARKERS, true);
