@@ -42,7 +42,6 @@ void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
    if(ros::param::has("/process_object_segmentation"))
    {
-       ROS_INFO("process_object_segmentation EXIST");
        bool rosParamProcess;
        //ros::param::get("/process_object_segmentation", rosParamProcess);
 
@@ -54,8 +53,6 @@ void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
            ROS_INFO("process_object_segmentation IS FALSE");
            return;
        }
-       else
-           ROS_INFO("process_object_segmentation IS TRUE");
    }
 
   // Container for original & filtered data
