@@ -45,7 +45,7 @@ void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
        bool rosParamProcess;
        //ros::param::get("/process_object_segmentation", rosParamProcess);
 
-       ros::param::get("/process_object_segmentation", rosParamProcess)
+       ros::param::get("/process_object_segmentation", rosParamProcess);
 
        ROS_INFO_STREAM("process_object_segmentation : " << rosParamProcess);
        if(!rosParamProcess)
