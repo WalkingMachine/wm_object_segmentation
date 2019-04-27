@@ -8,7 +8,7 @@
 
 WM repo needed: wm_openni2_camera and wm_table_segmentation
 
-Active when rosparam `/process_object_segmentation` is `true` (or not exist). Do not compute when it's `false`
+Active when rosparam `/process_object_segmentation` and `process_table_segmentation` is `true` (or not exist). Do not compute when they are `false`
 
 
 # my_pcl_tutotial
