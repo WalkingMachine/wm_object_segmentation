@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(wm_object_segmentation)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+# Compile as C++11, supported in ROS Kinetic and newer
+ add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -105,10 +105,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES my_pcl_tutorial
-#  CATKIN_DEPENDS pcl_conversions pcl_ros roscpp sensor_msgs
-#  DEPENDS system_lib
+  #INCLUDE_DIRS include
+  LIBRARIES my_pcl_tutorial
+  CATKIN_DEPENDS pcl_conversions pcl_ros roscpp sensor_msgs sara_msgs
+  DEPENDS system_lib
 )
 
 ###########
@@ -124,8 +124,15 @@ include_directories(
 
 add_executable(segmentation src/segmentation.cpp)
 add_executable(downsampling src/downsampling.cpp)
+
+add_dependencies(segmentation ${catkin_EXPORTED_TARGETS})
+
 target_link_libraries(segmentation ${catkin_LIBRARIES})
 target_link_libraries(downsampling ${catkin_LIBRARIES})
+
+
+
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
