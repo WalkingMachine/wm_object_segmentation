@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 // PCL specific includes
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/PointCloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -16,12 +17,16 @@
 
 #include <dynamic_reconfigure/server.h>
 #include "wm_object_segmentation/wm_object_segmentationConfig.h"
+#include "sara_msgs/PointClouds.h"
+#include <limits>
 
 bool _PUBLISH_MARKERS{true};
 
 ros::Publisher pub;
 ros::Publisher pub_BB3D;
 ros::Publisher pub_markers;
+ros::Publisher pub_objects_pointclouds;
+ros::Publisher pub_pointclouds;
 float lim_size_gripper;
 float lim_max_size_object;
 float lim_distance_object;
@@ -88,343 +93,62 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
 
     //object to store the data to publish the BoundingBoxes3D
     sara_msgs::BoundingBoxes3D box_list;
-    box_list.header.stamp = ros::Time::now();
-    box_list.header.frame_id = "/base_link";
+    box_list.header = cloud_msg->header;
     sara_msgs::BoundingBox3D boundingBox;
     boundingBox.Class = "";
     boundingBox.probability = 1;
     bool firstValue = true;
-    float xmin, xmax, ymin, ymax, zmin, zmax;
-    float xmoy, ymoy, zmoy;
+
+
 
     int j = 0;
+
+    sara_msgs::PointClouds msgPointClouds;
+    msgPointClouds.header = cloud_msg->header;
 
 
     for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin();
          it != cluster_indices.end(); ++it) {
+
+        pcl::PointCloud<pcl::PointXYZRGB> msgPointCloud;
+//        sensor_msgs::PointCloud msgPointCloud;
+
+
+
+        // Initialize limits
+        float xmin{std::numeric_limits<float>::max()};
+        float ymin{xmin};
+        float zmin{ymin};
+
+        float xmax{std::numeric_limits<float>::min()};
+        float ymax{xmax};
+        float zmax{ymax};
+
+        float xmoy, ymoy, zmoy;
+
         for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit) {
             pcl::PointXYZRGB point;
             point.x = point_cloudPtr->points[*pit].x;
             point.y = point_cloudPtr->points[*pit].y;
             point.z = point_cloudPtr->points[*pit].z;
 
-            if (j == 0) //Red	#FF0000	(255,0,0)
-            {
-                point.r = 0;
-                point.g = 0;
-                point.b = 255;
+            // Adjust limits
+            if (xmin > point.x) xmin = point.x;
+            if (xmax < point.x) xmax = point.x;
+            if (ymin > point.y) ymin = point.y;
+            if (ymax < point.y) ymax = point.y;
+            if (zmin > point.z) zmin = point.z;
+            if (zmax < point.z) zmax = point.z;
 
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-
-            } else if (j == 1) //Lime	#00FF00	(0,255,0)
-            {
-                point.r = 0;
-                point.g = 255;
-                point.b = 0;
-
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-            } else if (j == 2) // Blue	#0000FF	(0,0,255)
-            {
-                point.r = 255;
-                point.g = 0;
-                point.b = 0;
-
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-            } else if (j == 3) // Yellow	#FFFF00	(255,255,0)
-            {
-                point.r = 255;
-                point.g = 255;
-                point.b = 0;
-
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-            } else if (j == 4) //Cyan	#00FFFF	(0,255,255)
-            {
-                point.r = 0;
-                point.g = 255;
-                point.b = 255;
-
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-            } else if (j == 5) // Magenta	#FF00FF	(255,0,255)
-            {
-                point.r = 255;
-                point.g = 0;
-                point.b = 255;
-
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-            } else if (j == 6) // Olive	#808000	(128,128,0)
-            {
-                point.r = 128;
-                point.g = 128;
-                point.b = 0;
-
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-            } else if (j == 7) // Teal	#008080	(0,128,128)
-            {
-                point.r = 0;
-                point.g = 128;
-                point.b = 128;
-
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-            } else if (j == 8) // Purple	#800080	(128,0,128)
-            {
-                point.r = 128;
-                point.g = 0;
-                point.b = 128;
-
-                if (firstValue) {
-                    firstValue = false;
-                    xmin = point.x;
-                    xmax = point.x;
-                    ymin = point.y;
-                    ymax = point.y;
-                    zmin = point.z;
-                    zmax = point.z;
-                } else {
-                    if (xmin > point.x)
-                        xmin = point.x;
-                    if (xmax < point.x)
-                        xmax = point.x;
-                    if (ymin > point.y)
-                        ymin = point.y;
-                    if (ymax < point.y)
-                        ymax = point.y;
-                    if (zmin > point.z)
-                        zmin = point.z;
-                    if (zmax < point.z)
-                        zmax = point.z;
-                }
-            } else {
-                if (j % 2 == 0) {
-                    point.r = 255 * j / (cluster_indices.size());
-                    point.g = 128;
-                    point.b = 50;
-
-                    if (firstValue) {
-                        firstValue = false;
-                        xmin = point.x;
-                        xmax = point.x;
-                        ymin = point.y;
-                        ymax = point.y;
-                        zmin = point.z;
-                        zmax = point.z;
-                    } else {
-                        if (xmin > point.x)
-                            xmin = point.x;
-                        if (xmax < point.x)
-                            xmax = point.x;
-                        if (ymin > point.y)
-                            ymin = point.y;
-                        if (ymax < point.y)
-                            ymax = point.y;
-                        if (zmin > point.z)
-                            zmin = point.z;
-                        if (zmax < point.z)
-                            zmax = point.z;
-                    }
-                } else {
-                    point.r = 0;
-                    point.g = 255 * j / (cluster_indices.size());
-                    point.b = 128;
-
-                    if (firstValue) {
-                        firstValue = false;
-                        xmin = point.x;
-                        xmax = point.x;
-                        ymin = point.y;
-                        ymax = point.y;
-                        zmin = point.z;
-                        zmax = point.z;
-                    } else {
-                        if (xmin > point.x)
-                            xmin = point.x;
-                        if (xmax < point.x)
-                            xmax = point.x;
-                        if (ymin > point.y)
-                            ymin = point.y;
-                        if (ymax < point.y)
-                            ymax = point.y;
-                        if (zmin > point.z)
-                            zmin = point.z;
-                        if (zmax < point.z)
-                            zmax = point.z;
-                    }
-                }
-            }
             point_cloud_segmented->push_back(point);
+
+            msgPointCloud.push_back(point);
         }
-        firstValue = true;
+
+        // Calculate the dimentions of the box
         xmoy = (xmin + xmax) / 2.0;
         ymoy = (ymin + ymax) / 2.0;
         zmoy = (zmin + zmax) / 2.0;
-
 
         boundingBox.Center.x = xmoy;
         boundingBox.Center.y = ymoy;
@@ -439,12 +163,11 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
 
             box_list.boundingBoxes.push_back(boundingBox);
 
-            /*** Publish the boxes ***/
+            /*** Publish the visual box ***/
             if (_PUBLISH_MARKERS) {  // Publish visual box
                 visualization_msgs::Marker m;
-                m.header.stamp = box_list.header.stamp;
+                m.header = cloud_msg->header;
                 m.lifetime = ros::Duration(0.3);
-                m.header.frame_id = box_list.header.frame_id;
                 m.ns = boundingBox.Class;
                 m.id = ros::Time::now().toNSec() + int(boundingBox.probability * 1000);
                 m.type = m.CUBE;
@@ -460,11 +183,26 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
                 m.color.a = 0.2;
                 pub_markers.publish(m);
             }
+
+
+            // Publish the segmented pointcloud
+            sensor_msgs::PointCloud2 output;
+            pcl::PCLPointCloud2 temp;
+
+            pcl::toPCLPointCloud2(msgPointCloud, temp);
+            pcl_conversions::fromPCL(temp, output);
+            output.header = cloud_msg->header;
+            pub_pointclouds.publish(output);
+            msgPointClouds.pointClouds.push_back(output);
+
         }
 
         j++;
     }
+
+    // Publish the list of boxes
     pub_BB3D.publish(box_list);
+    pub_objects_pointclouds.publish(msgPointClouds);
 
     std::cerr << "segemnted:  " << (int) point_cloud_segmented->size() << "\n";
     std::cerr << "origin:     " << (int) point_cloudPtr->size() << "\n";
@@ -503,6 +241,8 @@ main(int argc, char **argv) {
     pub_BB3D = nh.advertise<sara_msgs::BoundingBoxes3D>("unknown_objects", 100);
 
     pub_markers = nh.advertise<visualization_msgs::Marker>("/boxes", 100);
+    pub_objects_pointclouds = nh.advertise<sara_msgs::PointClouds>("/segmented_objects", 100);
+    pub_pointclouds = nh.advertise<sensor_msgs::PointCloud2>("/segmented_pointcloud", 100);
 
     // Spin
     ros::spin();
