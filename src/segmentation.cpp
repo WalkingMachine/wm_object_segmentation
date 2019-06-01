@@ -22,7 +22,6 @@
 
 bool _PUBLISH_MARKERS{true};
 
-ros::Publisher pub;
 ros::Publisher pub_BB3D;
 ros::Publisher pub_markers;
 ros::Publisher pub_objects_pointclouds;
@@ -89,7 +88,6 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
     ec.setInputCloud(point_cloudPtr);
     ec.extract(cluster_indices);
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_segmented(new pcl::PointCloud <pcl::PointXYZRGB>);
 
     //object to store the data to publish the BoundingBoxes3D
     sara_msgs::BoundingBoxes3D box_list;
@@ -97,8 +95,6 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
     sara_msgs::BoundingBox3D boundingBox;
     boundingBox.Class = "";
     boundingBox.probability = 1;
-    bool firstValue = true;
-
 
 
     int j = 0;
@@ -111,16 +107,13 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
          it != cluster_indices.end(); ++it) {
 
         pcl::PointCloud<pcl::PointXYZRGB> msgPointCloud;
-//        sensor_msgs::PointCloud msgPointCloud;
-
-
 
         // Initialize limits
         float xmin{std::numeric_limits<float>::max()};
         float ymin{xmin};
         float zmin{ymin};
 
-        float xmax{std::numeric_limits<float>::min()};
+        float xmax{-std::numeric_limits<float>::max()};
         float ymax{xmax};
         float zmax{ymax};
 
@@ -130,10 +123,10 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
         pcl::PointXYZRGB point;
 
         // Calculate the points color
-        float h{(float)j/(float)it->indices.size()};
+        float h{float(sin(j))};
         point.r = int(h*255);
         point.g = int((1-h)*255);
-        point.b = 255-abs(int(h-0.5f)*510) ;
+        point.b = 255-abs(int((h-0.5f)*510)) ;
 
         for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit) {
 
@@ -148,8 +141,6 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
             if (ymax < point.y) ymax = point.y;
             if (zmin > point.z) zmin = point.z;
             if (zmax < point.z) zmax = point.z;
-
-            point_cloud_segmented->push_back(point);
 
             msgPointCloud.push_back(point);
         }
@@ -212,18 +203,6 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
     // Publish the list of boxes
     pub_BB3D.publish(box_list);
     pub_objects_pointclouds.publish(msgPointClouds);
-
-    std::cerr << "segemnted:  " << (int) point_cloud_segmented->size() << "\n";
-    std::cerr << "origin:     " << (int) point_cloudPtr->size() << "\n";
-    // Convert to ROS data type
-    point_cloud_segmented->header.frame_id = point_cloudPtr->header.frame_id;
-    if (point_cloud_segmented->size()) pcl::toPCLPointCloud2(*point_cloud_segmented, cloud_filtered);
-    else pcl::toPCLPointCloud2(*point_cloudPtr, cloud_filtered);
-    sensor_msgs::PointCloud2 output;
-    pcl_conversions::fromPCL(cloud_filtered, output);
-
-    // Publish the data
-    pub.publish(output);
 }
 
 int
@@ -244,14 +223,11 @@ main(int argc, char **argv) {
     // Create a ROS subscriber for the input point cloud
     ros::Subscriber sub = nh.subscribe("/segment_table/nonplane", 1, cloud_cb);
 
-    // Create a ROS publisher for the output point cloud
-    pub = nh.advertise<sensor_msgs::PointCloud2>("output", 1);
-
-    pub_BB3D = nh.advertise<sara_msgs::BoundingBoxes3D>("unknown_objects", 100);
-
+    // Create the ROS publishers
+    pub_BB3D = nh.advertise<sara_msgs::BoundingBoxes3D>("/unknown_objects/boxes", 100);
     pub_markers = nh.advertise<visualization_msgs::Marker>("/boxes", 100);
-    pub_objects_pointclouds = nh.advertise<sara_msgs::PointClouds>("/segmented_objects", 100);
-    pub_pointclouds = nh.advertise<sensor_msgs::PointCloud2>("/segmented_pointcloud", 100);
+    pub_objects_pointclouds = nh.advertise<sara_msgs::PointClouds>("/unknown_objects/segmented_pointclouds/listed", 100);
+    pub_pointclouds = nh.advertise<sensor_msgs::PointCloud2>("/unknown_objects/segmented_pointclouds/individual", 100);
 
     // Spin
     ros::spin();
