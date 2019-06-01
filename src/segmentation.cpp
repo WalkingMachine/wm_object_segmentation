@@ -126,8 +126,17 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
 
         float xmoy, ymoy, zmoy;
 
+        // Initiate the points
+        pcl::PointXYZRGB point;
+
+        // Calculate the points color
+        float h{(float)j/(float)it->indices.size()};
+        point.r = int(h*255);
+        point.g = int((1-h)*255);
+        point.b = 255-abs(int(h-0.5f)*510) ;
+
         for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit) {
-            pcl::PointXYZRGB point;
+
             point.x = point_cloudPtr->points[*pit].x;
             point.y = point_cloudPtr->points[*pit].y;
             point.z = point_cloudPtr->points[*pit].z;
