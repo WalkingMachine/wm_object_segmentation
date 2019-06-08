@@ -22,7 +22,6 @@
 
 bool _PUBLISH_MARKERS{true};
 
-ros::Publisher pub_BB3D;
 ros::Publisher pub_markers;
 ros::Publisher pub_objects_pointclouds;
 ros::Publisher pub_pointclouds;
@@ -186,13 +185,15 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
 
 
             // Publish the segmented pointcloud
-            sensor_msgs::PointCloud2 output;
+            sara_msgs::PointCloud output;
             pcl::PCLPointCloud2 temp;
 
             pcl::toPCLPointCloud2(msgPointCloud, temp);
-            pcl_conversions::fromPCL(temp, output);
-            output.header = cloud_msg->header;
-            pub_pointclouds.publish(output);
+            pcl_conversions::fromPCL(temp, output.pointCloud);
+            output.pointCloud.header = cloud_msg->header;
+            pub_pointclouds.publish(output.pointCloud);
+            output.boundingBox = boundingBox;
+
             msgPointClouds.pointClouds.push_back(output);
 
         }
@@ -201,7 +202,6 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
     }
 
     // Publish the list of boxes
-    pub_BB3D.publish(box_list);
     pub_objects_pointclouds.publish(msgPointClouds);
 }
 
@@ -224,7 +224,6 @@ main(int argc, char **argv) {
     ros::Subscriber sub = nh.subscribe("/segment_table/nonplane", 1, cloud_cb);
 
     // Create the ROS publishers
-    pub_BB3D = nh.advertise<sara_msgs::BoundingBoxes3D>("/unknown_objects/boxes", 100);
     pub_markers = nh.advertise<visualization_msgs::Marker>("/boxes", 100);
     pub_objects_pointclouds = nh.advertise<sara_msgs::PointClouds>("/unknown_objects/segmented_pointclouds/listed", 100);
     pub_pointclouds = nh.advertise<sensor_msgs::PointCloud2>("/unknown_objects/segmented_pointclouds/individual", 100);
