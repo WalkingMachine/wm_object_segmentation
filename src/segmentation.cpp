@@ -7,6 +7,7 @@
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/conversions.h>
+#include <geometry_msgs/PoseStamped.h>
 
 #include <pcl/search/search.h>
 #include <pcl/search/kdtree.h>
@@ -28,6 +29,7 @@ ros::Publisher pub_pointclouds;
 float lim_size_gripper;
 float lim_max_size_object;
 float lim_distance_object;
+float minimalZ{0};
 
 void callback(wm_object_segmentation::wm_object_segmentationConfig &config, uint32_t level) {
     ROS_INFO("Reconfigure Request: %f %f %f",
@@ -38,6 +40,10 @@ void callback(wm_object_segmentation::wm_object_segmentationConfig &config, uint
     lim_size_gripper = config.lim_size_gripper;
     lim_max_size_object = config.lim_max_size_object;
     lim_distance_object = config.lim_distance_object;
+}
+
+void plane_cb(geometry_msgs::PoseStamped pose){
+    minimalZ = pose.pose.position.z;
 }
 
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
@@ -81,7 +87,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
     std::vector <pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction <pcl::PointXYZ> ec;
     ec.setClusterTolerance(0.05); // 1cm
-    ec.setMinClusterSize(50); //50
+    ec.setMinClusterSize(10); //50
     ec.setMaxClusterSize(99000000);
     ec.setSearchMethod(tree);
     ec.setInputCloud(point_cloudPtr);
@@ -158,7 +164,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
 
         if ((boundingBox.Depth < lim_size_gripper || boundingBox.Width < lim_size_gripper) &&
             boundingBox.Depth < lim_max_size_object && boundingBox.Width < lim_max_size_object &&
-            boundingBox.Center.x < lim_distance_object) {
+            boundingBox.Center.x < lim_distance_object && boundingBox.Center.z > minimalZ) {
 
             box_list.boundingBoxes.push_back(boundingBox);
 
@@ -222,6 +228,7 @@ main(int argc, char **argv) {
 
     // Create a ROS subscriber for the input point cloud
     ros::Subscriber sub = nh.subscribe("/segment_table/nonplane", 1, cloud_cb);
+    ros::Subscriber subPlane = nh.subscribe("/segment_table/plane_pose", 1, plane_cb);
 
     // Create the ROS publishers
     pub_markers = nh.advertise<visualization_msgs::Marker>("/boxes", 100);
