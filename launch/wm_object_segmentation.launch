@@ -3,7 +3,7 @@
 
   <include file="$(find tiago_pcl_tutorial)/launch/segment_table.launch">
           <arg name="show_rviz" value="false" />
-          <arg name="frame" value="/base_link" />
+          <arg name="frame" value="/map" />
           <arg name="passthrough_min" value="0.0" />
           <arg name="downsampling_size" value="0.01" />
   </include>
