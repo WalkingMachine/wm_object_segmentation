@@ -49,7 +49,7 @@ void pose_cb(const geometry_msgs::Pose _robot_pose){
     robot_pose = _robot_pose;
 }
 
-float distance(geometry_msgs::Pose a,geometry_msgs::Pose b){
+float distance(geometry_msgs::Point a,geometry_msgs::Point b){
     return sqrt( pow(b.x-a.x, 2) + pow(b.y-a.y, 2) + pow(b.z-a.z, 2) );
 }
 
