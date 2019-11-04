@@ -1,7 +1,11 @@
 #include <ros/ros.h>
+#include <math.h>
+
 // PCL specific includes
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Point.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -28,6 +32,7 @@ ros::Publisher pub_pointclouds;
 float lim_size_gripper;
 float lim_max_size_object;
 float lim_distance_object;
+geometry_msgs::Pose robot_pose;
 
 void callback(wm_object_segmentation::wm_object_segmentationConfig &config, uint32_t level) {
     ROS_INFO("Reconfigure Request: %f %f %f",
@@ -38,6 +43,14 @@ void callback(wm_object_segmentation::wm_object_segmentationConfig &config, uint
     lim_size_gripper = config.lim_size_gripper;
     lim_max_size_object = config.lim_max_size_object;
     lim_distance_object = config.lim_distance_object;
+}
+
+void pose_cb(const geometry_msgs::Pose _robot_pose){
+    robot_pose = _robot_pose;
+}
+
+float distance(geometry_msgs::Point a,geometry_msgs::Point b){
+    return sqrt( pow(b.x-a.x, 2) + pow(b.y-a.y, 2) + pow(b.z-a.z, 2) );
 }
 
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
@@ -158,7 +171,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
 
         if ((boundingBox.Depth < lim_size_gripper || boundingBox.Width < lim_size_gripper) &&
             boundingBox.Depth < lim_max_size_object && boundingBox.Width < lim_max_size_object &&
-            boundingBox.Center.x < lim_distance_object) {
+            distance(robot_pose.position, boundingBox.Center) < lim_distance_object) {
 
             box_list.boundingBoxes.push_back(boundingBox);
 
@@ -220,8 +233,9 @@ main(int argc, char **argv) {
     f = boost::bind(&callback, _1, _2);
     server.setCallback(f);
 
-    // Create a ROS subscriber for the input point cloud
+    // Create a ROS subscriber for the input point cloud and robot_pose
     ros::Subscriber sub = nh.subscribe("/segment_table/nonplane", 1, cloud_cb);
+    ros::Subscriber sub_pose = nh.subscribe("/robot_pose", 1, pose_cb);
 
     // Create the ROS publishers
     pub_markers = nh.advertise<visualization_msgs::Marker>("/boxes", 100);
