@@ -105,7 +105,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
     sara_msgs::BoundingBoxes3D box_list;
     box_list.header = cloud_msg->header;
     sara_msgs::BoundingBox3D boundingBox;
-    boundingBox.Class = "";
+    boundingBox.className = "";
     boundingBox.probability = 1;
 
 
@@ -162,16 +162,16 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
         ymoy = (ymin + ymax) / 2.0;
         zmoy = (zmin + zmax) / 2.0;
 
-        boundingBox.Center.x = xmoy;
-        boundingBox.Center.y = ymoy;
-        boundingBox.Center.z = zmoy;
-        boundingBox.Depth = xmax - xmin;
-        boundingBox.Width = ymax - ymin;
-        boundingBox.Height = zmax - zmin;
+        boundingBox.pose.position.x = xmoy;
+        boundingBox.pose.position.y = ymoy;
+        boundingBox.pose.position.z = zmoy;
+        boundingBox.depth = xmax - xmin;
+        boundingBox.width = ymax - ymin;
+        boundingBox.height = zmax - zmin;
 
-        if ((boundingBox.Depth < lim_size_gripper || boundingBox.Width < lim_size_gripper) &&
-            boundingBox.Depth < lim_max_size_object && boundingBox.Width < lim_max_size_object &&
-            distance(robot_pose.position, boundingBox.Center) < lim_distance_object) {
+        if ((boundingBox.depth < lim_size_gripper || boundingBox.width < lim_size_gripper) &&
+            boundingBox.depth < lim_max_size_object && boundingBox.width < lim_max_size_object &&
+            distance(robot_pose.position, boundingBox.pose.position) < lim_distance_object) {
 
             box_list.boundingBoxes.push_back(boundingBox);
 
@@ -180,15 +180,15 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg) {
                 visualization_msgs::Marker m;
                 m.header = cloud_msg->header;
                 m.lifetime = ros::Duration(0.3);
-                m.ns = boundingBox.Class;
+                m.ns = boundingBox.className;
                 m.id = ros::Time::now().toNSec() + int(boundingBox.probability * 1000);
                 m.type = m.CUBE;
-                m.pose.position.x = boundingBox.Center.x;
-                m.pose.position.y = boundingBox.Center.y;
-                m.pose.position.z = boundingBox.Center.z;
-                m.scale.x = boundingBox.Depth;
-                m.scale.y = boundingBox.Width;
-                m.scale.z = boundingBox.Height;
+                m.pose.position.x = boundingBox.pose.position.x;
+                m.pose.position.y = boundingBox.pose.position.y;
+                m.pose.position.z = boundingBox.pose.position.z;
+                m.scale.x = boundingBox.depth;
+                m.scale.y = boundingBox.width;
+                m.scale.z = boundingBox.height;
                 m.color.r = 0;
                 m.color.g = 1;
                 m.color.b = 0;
